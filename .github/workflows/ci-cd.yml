@@ -52,6 +52,7 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,18 +63,33 @@ jobs:
           node-version: 20
           cache: npm
 
+      # Deployment is skipped (not failed) until the Vercel secrets exist.
+      - name: Check deploy credentials
+        id: creds
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID are not set - skipping preview deploy."
+          fi
+
       - name: Install Vercel CLI
+        if: steps.creds.outputs.ready == 'true'
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.creds.outputs.ready == 'true'
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: Build project
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.creds.outputs.ready == 'true'
+        run: vercel build --token="$VERCEL_TOKEN"
 
       - name: Deploy preview
+        if: steps.creds.outputs.ready == 'true'
         run: |
-          url="$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})"
+          url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
           echo "Preview URL: $url"
 
@@ -88,6 +104,7 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -98,18 +115,33 @@ jobs:
           node-version: 20
           cache: npm
 
+      # Deployment is skipped (not failed) until the Vercel secrets exist.
+      - name: Check deploy credentials
+        id: creds
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID are not set - skipping production deploy."
+          fi
+
       - name: Install Vercel CLI
+        if: steps.creds.outputs.ready == 'true'
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.creds.outputs.ready == 'true'
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Build project
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.creds.outputs.ready == 'true'
+        run: vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy production
         id: deploy
+        if: steps.creds.outputs.ready == 'true'
         run: |
-          url="$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})"
+          url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Production: $url" >> "$GITHUB_STEP_SUMMARY"
