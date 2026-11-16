@@ -68,7 +68,7 @@ const Hero = () => {
 
             <div className="hero-socials">
               <a
-                href="https://github.com/yabcipher22"
+                href="https://github.com/yabcipher2"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-icon"
